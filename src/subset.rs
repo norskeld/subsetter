@@ -3,10 +3,11 @@ use std::env;
 use std::fmt::{self, Display};
 use std::process::{self, Command};
 
+use clap::ValueEnum;
 use indicatif::{ProgressBar, ProgressStyle};
 use rayon::prelude::*;
 
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug, Default, ValueEnum)]
 pub(crate) enum Flavor {
   Woff,
   #[default]

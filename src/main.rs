@@ -1,44 +1,36 @@
+mod hubset;
 mod inspect;
 mod subset;
 
 use std::fs;
 use std::path::Path;
 
-use clap::builder::PossibleValue;
-use clap::{Parser, ValueEnum};
+use clap::Parser;
 
 use crate::subset::Flavor;
 
 #[derive(Debug, Parser)]
 #[command(version, about, long_about = None)]
 struct Args {
+  /// Output basic font metadata.
   #[arg(short, long, exclusive = true)]
   inspect: bool,
+
+  /// Use HarfBuzz subsetter.
+  #[arg(long, default_value_t = true, conflicts_with = "fonttools")]
+  harfbuzz: bool,
+
+  /// Use FontTools subsetter.
+  #[arg(long, conflicts_with = "harfbuzz")]
+  fonttools: bool,
+
+  /// Font flavor to use. Incompatible with `hb-subset`.
+  #[arg(short, long, conflicts_with = "harfbuzz")]
+  flavor: Option<Flavor>,
 
   /// List of subsets to include.
   #[arg(short, long, required = true, value_delimiter = ',')]
   subsets: Vec<String>,
-
-  /// List of features to include.
-  #[arg(short, long, value_delimiter = ',')]
-  features: Vec<String>,
-
-  /// Flavor of output font.
-  #[arg(short, long)]
-  flavor: Option<Flavor>,
-}
-
-impl ValueEnum for Flavor {
-  fn value_variants<'a>() -> &'a [Self] {
-    &[Self::Woff, Self::Woff2]
-  }
-
-  fn to_possible_value(&self) -> Option<PossibleValue> {
-    Some(match self {
-      | Self::Woff => PossibleValue::new("woff"),
-      | Self::Woff2 => PossibleValue::new("woff2"),
-    })
-  }
 }
 
 /// Check if `path` is a font file.
@@ -66,7 +58,9 @@ fn main() {
 
   if args.inspect {
     inspect::inspect(files);
-  } else {
+  } else if args.fonttools {
     subset::subset(files, args.subsets, args.flavor.unwrap_or_default());
+  } else {
+    hubset::subset(files, args.subsets);
   }
 }
